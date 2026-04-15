@@ -5,6 +5,10 @@ import type {
   BlogSection,
 } from "@/types";
 import { generateWithLLM } from "./llm";
+import {
+  transcribeYouTubeVideo,
+  type TranscriptionResult,
+} from "@/lib/services/transcription";
 
 export interface SourceInput {
   type: "youtube" | "upload" | "text";
@@ -333,9 +337,63 @@ function generateDeterministic(
   };
 }
 
+async function generateFromTranscript(
+  input: SourceInput,
+  transcription: TranscriptionResult
+): Promise<GeneratedResult> {
+  const { text, segments, language, durationSeconds } = transcription;
+
+  const sentences = sentenceTokenize(text);
+  const keywords = extractKeyPhrases(sentences);
+  const highlights = buildHighlights(
+    segments.length > 0 ? segments : buildTranscript(sentences).segments,
+    keywords
+  );
+
+  const llmContent = await generateWithLLM({
+    title: input.title,
+    sourceText: text,
+    sourceType: input.type,
+    language,
+  });
+
+  if (llmContent) {
+    return {
+      transcript: segments.length > 0 ? segments : buildTranscript(sentences).segments,
+      highlights,
+      content: llmContent,
+      language,
+      durationSeconds,
+      generatedBy: "llm",
+    };
+  }
+
+  const content = buildContent(input.title, sentences, keywords, highlights, input.type);
+  return {
+    transcript: segments.length > 0 ? segments : buildTranscript(sentences).segments,
+    highlights,
+    content,
+    language,
+    durationSeconds,
+    generatedBy: "deterministic",
+  };
+}
+
 export async function generateFromInput(
   input: SourceInput
 ): Promise<GeneratedResult> {
+  if (input.type === "youtube" && input.value.trim().length > 0) {
+    const { videoId } = parseYouTubeUrl(input.value);
+    if (videoId) {
+      try {
+        const transcription = await transcribeYouTubeVideo(videoId);
+        return await generateFromTranscript(input, transcription);
+      } catch {
+        // Fall through to synthetic pipeline
+      }
+    }
+  }
+
   const rawText = buildSourceText(input);
   const language = detectLanguage(rawText);
 
