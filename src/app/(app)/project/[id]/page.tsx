@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TranscriptPanel } from "@/components/project/transcript-panel";
@@ -17,6 +18,10 @@ export default async function ProjectPage({
   const { id } = await params;
   const result = await getProjectResult(id);
 
+  if (!result) {
+    notFound();
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
@@ -24,17 +29,31 @@ export default async function ProjectPage({
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm" className="h-8 px-2">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                  />
                 </svg>
               </Button>
             </Link>
             <div className="h-4 w-px bg-border" />
             <Link href="/dashboard" className="flex items-center gap-2">
               <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-[10px]">N</span>
+                <span className="text-primary-foreground font-bold text-[10px]">
+                  N
+                </span>
               </div>
-              <span className="text-sm font-semibold tracking-tight hidden sm:inline">Nashr</span>
+              <span className="text-sm font-semibold tracking-tight hidden sm:inline">
+                Nashr
+              </span>
             </Link>
           </div>
           <div className="flex items-center gap-3">
@@ -42,7 +61,11 @@ export default async function ProjectPage({
               {result.project.status}
             </Badge>
             <span className="text-xs text-muted-foreground hidden sm:inline">
-              {result.project.sourceType === "youtube" ? "YouTube" : result.project.sourceType === "upload" ? "Upload" : "Text"}
+              {result.project.sourceType === "youtube"
+                ? "YouTube"
+                : result.project.sourceType === "upload"
+                  ? "Upload"
+                  : "Text"}
             </span>
           </div>
         </div>

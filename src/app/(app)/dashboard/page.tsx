@@ -1,9 +1,14 @@
+import { redirect } from "next/navigation";
 import { InputCard } from "@/components/dashboard/input-card";
 import { ProjectList } from "@/components/dashboard/project-list";
 import { listProjects } from "@/lib/services/projects";
+import { getUser } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
-  const projects = await listProjects();
+  const user = await getUser();
+  if (!user) redirect("/login");
+
+  const projects = await listProjects(user.id);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

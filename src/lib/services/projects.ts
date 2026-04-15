@@ -1,5 +1,6 @@
 import type { Project, ProjectResult, CreateProjectInput } from "@/types";
 import { getMockProjectResult, mockProjects } from "@/lib/mock-data";
+import { seedDemoContent } from "@/lib/services/demo-seed";
 
 const USE_SUPABASE =
   typeof process !== "undefined" &&
@@ -20,10 +21,10 @@ function mapDbProject(row: Record<string, unknown>): Project {
   };
 }
 
-export async function listProjects(userId?: string): Promise<Project[]> {
-  if (USE_SUPABASE && userId) {
-    const { createServerClient } = await import("@/lib/supabase/server");
-    const supabase = createServerClient();
+export async function listProjects(userId: string): Promise<Project[]> {
+  if (USE_SUPABASE) {
+    const { createSupabaseServer } = await import("@/lib/supabase/server");
+    const supabase = await createSupabaseServer();
     const { data, error } = await supabase
       .from("projects")
       .select("*")
@@ -38,11 +39,11 @@ export async function listProjects(userId?: string): Promise<Project[]> {
 }
 
 export async function getProjectResult(
-  projectId: string,
-): Promise<ProjectResult> {
+  projectId: string
+): Promise<ProjectResult | null> {
   if (USE_SUPABASE) {
-    const { createServerClient } = await import("@/lib/supabase/server");
-    const supabase = createServerClient();
+    const { createSupabaseServer } = await import("@/lib/supabase/server");
+    const supabase = await createSupabaseServer();
 
     const [projectRes, transcriptRes, highlightsRes, assetsRes] =
       await Promise.all([
@@ -63,7 +64,7 @@ export async function getProjectResult(
           .eq("project_id", projectId),
       ]);
 
-    if (projectRes.error) throw projectRes.error;
+    if (projectRes.error) return null;
 
     const project = mapDbProject(projectRes.data as Record<string, unknown>);
     const transcript = ((transcriptRes.data as Record<string, unknown>)
@@ -83,7 +84,7 @@ export async function getProjectResult(
     for (const a of (assetsRes.data ?? []) as Record<string, unknown>[]) {
       assetsMap.set(
         a.asset_type as string,
-        a.content as Record<string, unknown>,
+        a.content as Record<string, unknown>
       );
     }
 
@@ -109,11 +110,11 @@ export async function getProjectResult(
 
 export async function createProject(
   input: CreateProjectInput,
-  userId?: string,
+  userId: string
 ): Promise<Project> {
-  if (USE_SUPABASE && userId) {
-    const { createServerClient } = await import("@/lib/supabase/server");
-    const supabase = createServerClient();
+  if (USE_SUPABASE) {
+    const { createSupabaseServer } = await import("@/lib/supabase/server");
+    const supabase = await createSupabaseServer();
 
     const { data, error } = await supabase
       .from("projects")
@@ -147,17 +148,27 @@ export async function createProject(
       metadata: { source_type: input.sourceType },
     });
 
-    return mapDbProject(data as Record<string, unknown>);
+    await seedDemoContent(supabase, projectId);
+
+    await supabase
+      .from("projects")
+      .update({ status: "completed" })
+      .eq("id", projectId);
+
+    return mapDbProject({
+      ...(data as Record<string, unknown>),
+      status: "completed",
+    });
   }
 
   const mockId = `proj-${Date.now()}`;
   return {
     id: mockId,
-    user_id: userId ?? "demo-user",
+    user_id: userId,
     title: input.title,
     sourceType: input.sourceType,
     sourceUrl: input.sourceUrl ?? null,
-    status: "processing",
+    status: "completed",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     thumbnailUrl: null,
