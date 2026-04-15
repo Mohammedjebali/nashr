@@ -1,21 +1,28 @@
-"use server";
-
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateFromInput } from "@/lib/ai/generate";
 
 export async function processProject(
   supabase: SupabaseClient,
   projectId: string,
+  userId: string,
   input: { type: "youtube" | "upload" | "text"; value: string; title: string }
 ) {
   const result = await generateFromInput(input);
 
-  await supabase.from("transcripts").insert({
-    project_id: projectId,
-    segments: result.transcript,
-    language: result.language,
-    duration_seconds: result.durationSeconds,
-  });
+  await supabase.from("transcripts").upsert(
+    {
+      project_id: projectId,
+      segments: result.transcript,
+      language: result.language,
+      duration_seconds: result.durationSeconds,
+    },
+    { onConflict: "project_id" }
+  );
+
+  await supabase
+    .from("highlights")
+    .delete()
+    .eq("project_id", projectId);
 
   await supabase.from("highlights").insert(
     result.highlights.map((h) => ({
@@ -27,6 +34,11 @@ export async function processProject(
       tags: h.tags,
     }))
   );
+
+  await supabase
+    .from("generated_assets")
+    .delete()
+    .eq("project_id", projectId);
 
   const assets: { asset_type: string; content: Record<string, unknown> }[] = [
     { asset_type: "linkedin", content: { text: result.content.linkedinPost } },
@@ -47,13 +59,7 @@ export async function processProject(
   );
 
   await supabase.from("usage_events").insert({
-    user_id: (
-      await supabase
-        .from("projects")
-        .select("user_id")
-        .eq("id", projectId)
-        .single()
-    ).data?.user_id,
+    user_id: userId,
     project_id: projectId,
     event_type: "generation_completed",
     metadata: { generated_by: result.generatedBy, language: result.language },

@@ -166,28 +166,26 @@ export async function createProject(
       .update({ status: "processing" })
       .eq("id", projectId);
 
+    let finalStatus: "completed" | "failed" = "completed";
+
     try {
-      await processProject(supabase, projectId, {
+      await processProject(supabase, projectId, userId, {
         type: input.sourceType,
         value: input.sourceUrl ?? input.rawText ?? "",
         title: input.title,
       });
-
-      await supabase
-        .from("projects")
-        .update({ status: "completed" })
-        .eq("id", projectId);
     } catch {
-      await supabase
-        .from("projects")
-        .update({ status: "failed" })
-        .eq("id", projectId);
-      throw new Error("Content generation failed");
+      finalStatus = "failed";
     }
+
+    await supabase
+      .from("projects")
+      .update({ status: finalStatus })
+      .eq("id", projectId);
 
     return mapDbProject({
       ...(data as Record<string, unknown>),
-      status: "completed",
+      status: finalStatus,
     });
   }
 

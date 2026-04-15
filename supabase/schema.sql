@@ -97,7 +97,7 @@ create table if not exists public.usage_events (
 create index if not exists idx_projects_user_id on public.projects(user_id);
 create index if not exists idx_projects_status on public.projects(status);
 create index if not exists idx_source_inputs_project on public.source_inputs(project_id);
-create index if not exists idx_transcripts_project on public.transcripts(project_id);
+create unique index if not exists idx_transcripts_project on public.transcripts(project_id);
 create index if not exists idx_highlights_project on public.highlights(project_id);
 create index if not exists idx_generated_assets_project on public.generated_assets(project_id);
 create index if not exists idx_generated_assets_type on public.generated_assets(asset_type);
@@ -193,6 +193,14 @@ create policy "Users can create highlights"
     and projects.user_id = auth.uid()
   ));
 
+create policy "Users can delete own highlights"
+  on public.highlights for delete
+  using (exists (
+    select 1 from public.projects
+    where projects.id = highlights.project_id
+    and projects.user_id = auth.uid()
+  ));
+
 -- Generated assets: access via project ownership
 create policy "Users can view own generated assets"
   on public.generated_assets for select
@@ -205,6 +213,14 @@ create policy "Users can view own generated assets"
 create policy "Users can create generated assets"
   on public.generated_assets for insert
   with check (exists (
+    select 1 from public.projects
+    where projects.id = generated_assets.project_id
+    and projects.user_id = auth.uid()
+  ));
+
+create policy "Users can delete own generated assets"
+  on public.generated_assets for delete
+  using (exists (
     select 1 from public.projects
     where projects.id = generated_assets.project_id
     and projects.user_id = auth.uid()

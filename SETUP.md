@@ -36,17 +36,16 @@ supabase link --project-ref nuekoqauvwjqgjqvqygc
 supabase db push
 ```
 
-### Migration: add `draft` status
+### Migrations (if schema was already applied)
 
-If you already applied the schema before the `draft` status was added, run this migration:
+Run these in order via the Supabase SQL Editor if you previously applied an earlier version of the schema:
 
-```sql
--- Add 'draft' to project status values and make it the default
-ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS projects_status_check;
-ALTER TABLE public.projects ADD CONSTRAINT projects_status_check
-  CHECK (status IN ('draft', 'processing', 'completed', 'failed'));
-ALTER TABLE public.projects ALTER COLUMN status SET DEFAULT 'draft';
-```
+**001 — add `draft` status** (`supabase/migrations/001_add_draft_status.sql`)
+
+**002 — live readiness** (`supabase/migrations/002_live_readiness.sql`)
+Adds unique constraint on `transcripts.project_id` and delete policies for re-generation.
+
+If starting fresh, `schema.sql` already includes everything — no migrations needed.
 
 ## Supabase Auth Config
 
@@ -78,6 +77,26 @@ npm run build  # Production build
 - Each generation records its method (`llm` or `deterministic`) in a usage event
 - RLS enforces row-level ownership; the app uses the authenticated anon client for user-scoped queries
 - Dashboard revalidates after project creation via `revalidatePath`
+
+## End-to-End Verification
+
+After applying the schema and setting env vars, walk through this flow to confirm everything works:
+
+1. **Auth** — visit `/register`, create an account with email + password. Verify redirect to `/dashboard`. Sign out, then sign back in at `/login`.
+2. **Project creation (text)** — on the dashboard, switch to "Paste Text", enter a paragraph, click "Generate Content". You should be redirected to `/project/<id>` showing a "completed" badge and all 7 content panels (transcript, highlights, LinkedIn, X thread, blog, hooks/hashtags, captions).
+3. **Project creation (YouTube)** — paste a YouTube URL, generate. Same flow — deterministic content is built from the URL metadata.
+4. **Project listing** — return to `/dashboard`. Both projects should appear in the list with status badges.
+5. **Gemini integration (optional)** — if `GOOGLE_GEMINI_API_KEY` is set, create another project. The project detail page should show an "AI generated" badge instead of "Auto generated".
+6. **Error state** — if generation fails for any reason, the project should still appear with a "failed" badge and a retry message — not a raw server error.
+
+### Quick smoke test (curl)
+
+```bash
+# After signing in via the browser, copy your sb-* cookies and run:
+curl -s http://localhost:3000/dashboard -H "Cookie: <your-cookies>" | grep -o 'Dashboard'
+```
+
+If you see `Dashboard`, the auth + server rendering pipeline is working.
 
 ## Next Steps
 
