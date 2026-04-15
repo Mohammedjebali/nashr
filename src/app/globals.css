@@ -134,3 +134,35 @@
     @apply font-sans;
   }
 }
+
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px 0 oklch(0.78 0.145 70 / 0.3); }
+  50% { box-shadow: 0 0 20px 4px oklch(0.78 0.145 70 / 0.5); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes border-dance {
+  0% { border-color: oklch(1 0 0 / 12%); }
+  50% { border-color: oklch(0.78 0.145 70 / 40%); }
+  100% { border-color: oklch(1 0 0 / 12%); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

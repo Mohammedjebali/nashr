@@ -27,8 +27,7 @@ const sourceConfig: Record<
 > = {
   youtube: {
     label: "YouTube",
-    color:
-      "bg-red-500/10 text-red-400 border-red-500/20",
+    color: "bg-red-500/10 text-red-400 border-red-500/20",
     icon: (
       <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
         <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
@@ -37,8 +36,7 @@ const sourceConfig: Record<
   },
   upload: {
     label: "Upload",
-    color:
-      "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
     icon: (
       <svg
         className="h-3 w-3"
@@ -57,8 +55,7 @@ const sourceConfig: Record<
   },
   text: {
     label: "Text",
-    color:
-      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     icon: (
       <svg
         className="h-3 w-3"
@@ -79,65 +76,86 @@ const sourceConfig: Record<
 
 const statusConfig: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
+  {
+    label: string;
+    variant: "default" | "secondary" | "outline" | "destructive";
+    dot: string;
+  }
 > = {
-  completed: { label: "Completed", variant: "default" },
-  processing: { label: "Processing", variant: "secondary" },
-  draft: { label: "Draft", variant: "outline" },
-  failed: { label: "Failed", variant: "destructive" },
+  completed: {
+    label: "Completed",
+    variant: "default",
+    dot: "bg-emerald-400",
+  },
+  processing: {
+    label: "Processing",
+    variant: "secondary",
+    dot: "bg-amber-400 animate-pulse",
+  },
+  draft: { label: "Draft", variant: "outline", dot: "bg-zinc-400" },
+  failed: { label: "Failed", variant: "destructive", dot: "bg-red-400" },
 };
 
 export function ProjectList({ projects }: { projects: Project[] }) {
   if (projects.length === 0) {
     return (
-      <Card className="border-border/50 border-dashed">
-        <CardContent className="py-16 text-center">
-          <div className="mx-auto mb-6 h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center">
-            <svg
-              className="h-8 w-8 text-primary/40"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1}
-              stroke="currentColor"
+      <Card className="border-border/50 border-dashed overflow-hidden">
+        <CardContent className="relative py-20 text-center">
+          {/* Gradient background glow */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.78_0.145_70/0.06)_0%,transparent_70%)]" />
+
+          <div className="relative">
+            <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/10">
+              <svg
+                className="h-10 w-10 text-primary/60"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z"
+                />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-semibold mb-2">
+              Create your first project
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-8 leading-relaxed">
+              Paste a YouTube URL, upload a file, or drop in some text. Nashr
+              will generate LinkedIn posts, X threads, blog drafts, and more
+              -- all in seconds.
+            </p>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/30"
+              onClick={() =>
+                document
+                  .querySelector('[data-slot="tabs"]')
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
+              }
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"
-              />
-            </svg>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
+                />
+              </svg>
+              Get started above
+            </Button>
           </div>
-          <h3 className="text-base font-semibold mb-1">
-            Create your first project
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
-            Paste a YouTube URL, upload a file, or drop in some text. Nashr will
-            generate LinkedIn posts, X threads, blog drafts, and more.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              document
-                .querySelector('[data-slot="tabs"]')
-                ?.scrollIntoView({ behavior: "smooth", block: "center" })
-            }
-          >
-            <svg
-              className="h-3.5 w-3.5 mr-1.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"
-              />
-            </svg>
-            Go to input above
-          </Button>
         </CardContent>
       </Card>
     );
@@ -147,76 +165,98 @@ export function ProjectList({ projects }: { projects: Project[] }) {
     <Card className="border-border/50">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Recent Projects</CardTitle>
-          <span className="text-xs text-muted-foreground">
+          <CardTitle className="text-base font-semibold">
+            Recent Projects
+          </CardTitle>
+          <span className="text-xs text-muted-foreground tabular-nums">
             {projects.length} project{projects.length !== 1 ? "s" : ""}
           </span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-1">
-        {projects.map((project) => {
-          const source = sourceConfig[project.sourceType] ?? sourceConfig.text;
-          const status = statusConfig[project.status] ?? statusConfig.draft;
-          const wasUpdated =
-            project.updatedAt !== project.createdAt &&
-            new Date(project.updatedAt).getTime() -
-              new Date(project.createdAt).getTime() >
-              5000;
+      <CardContent>
+        <div className="divide-y divide-border/50">
+          {projects.map((project) => {
+            const source =
+              sourceConfig[project.sourceType] ?? sourceConfig.text;
+            const status = statusConfig[project.status] ?? statusConfig.draft;
+            const wasUpdated =
+              project.updatedAt !== project.createdAt &&
+              new Date(project.updatedAt).getTime() -
+                new Date(project.createdAt).getTime() >
+                5000;
 
-          return (
-            <Link
-              key={project.id}
-              href={`/project/${project.id}`}
-              className="flex items-center gap-3 p-3 -mx-1 rounded-lg hover:bg-accent/50 transition-colors group"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                  {project.title}
-                </p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border ${source.color}`}
-                  >
-                    {source.icon}
-                    {source.label}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/50">
-                    &middot;
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {timeAgo(project.createdAt)}
-                  </span>
-                  {wasUpdated && (
-                    <>
-                      <span className="text-[10px] text-muted-foreground/50">
-                        &middot;
-                      </span>
-                      <span className="text-[10px] text-muted-foreground/60">
-                        updated {timeAgo(project.updatedAt)}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <Badge variant={status.variant} className="text-[10px] shrink-0">
-                {status.label}
-              </Badge>
-              <svg
-                className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
+            return (
+              <Link
+                key={project.id}
+                href={`/project/${project.id}`}
+                className="flex items-center gap-4 py-3.5 px-2 -mx-2 rounded-lg hover:bg-accent/50 transition-all duration-200 group"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m8.25 4.5 7.5 7.5-7.5 7.5"
-                />
-              </svg>
-            </Link>
-          );
-        })}
+                {/* Source type icon */}
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${source.color} transition-transform duration-200 group-hover:scale-105`}
+                >
+                  <span className="scale-125">{source.icon}</span>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors duration-200">
+                    {project.title}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border ${source.color}`}
+                    >
+                      {source.label}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/40">
+                      &middot;
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {timeAgo(project.createdAt)}
+                    </span>
+                    {wasUpdated && (
+                      <>
+                        <span className="text-[10px] text-muted-foreground/40">
+                          &middot;
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">
+                          updated {timeAgo(project.updatedAt)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status badge */}
+                <Badge
+                  variant={status.variant}
+                  className="text-[10px] shrink-0 gap-1.5"
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${status.dot}`}
+                  />
+                  {status.label}
+                </Badge>
+
+                {/* Chevron */}
+                <svg
+                  className="h-4 w-4 text-muted-foreground/20 group-hover:text-muted-foreground/60 group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                  />
+                </svg>
+              </Link>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
