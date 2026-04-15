@@ -1,8 +1,17 @@
 # Nashr — Setup Notes
 
-## Environment Variables
+## Quick Start
 
-Copy `.env.example` to `.env.local` and fill in:
+```bash
+cp .env.example .env.local
+# Fill in your Supabase keys (see below)
+npm install
+npm run dev
+```
+
+Without env vars the app runs in **demo mode** with generated mock data.
+
+## Environment Variables
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://nuekoqauvwjqgjqvqygc.supabase.co
@@ -10,18 +19,30 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 ```
 
-Without env vars the app runs in demo mode with mock data.
+Get keys from: Supabase Dashboard → Project Settings → API (project `nuekoqauvwjqgjqvqygc`).
 
-## Database Schema
+## Database Setup
 
-Apply the schema to the Supabase project:
+### First-time setup
+
+Paste `supabase/schema.sql` into the SQL Editor in the Supabase dashboard, or use the CLI:
 
 ```bash
-# Option A: paste supabase/schema.sql into the SQL Editor in the Supabase dashboard
-# Option B: supabase db push (if using Supabase CLI linked to project nuekoqauvwjqgjqvqygc)
+supabase link --project-ref nuekoqauvwjqgjqvqygc
+supabase db push
 ```
 
-The schema creates all tables, indexes, RLS policies, and triggers (including auto-profile creation on signup).
+### Migration: add `draft` status
+
+If you already applied the schema before the `draft` status was added, run this migration:
+
+```sql
+-- Add 'draft' to project status values and make it the default
+ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS projects_status_check;
+ALTER TABLE public.projects ADD CONSTRAINT projects_status_check
+  CHECK (status IN ('draft', 'processing', 'completed', 'failed'));
+ALTER TABLE public.projects ALTER COLUMN status SET DEFAULT 'draft';
+```
 
 ## Supabase Auth Config
 
@@ -42,19 +63,19 @@ npm run build  # Production build
 ## Architecture Notes
 
 - `proxy.ts` handles route protection (Next.js 16 proxy pattern — replaces traditional middleware.ts)
-- `src/app/(app)/layout.tsx` provides a shared auth guard for all app routes (dashboard, project detail)
+- `src/app/(app)/layout.tsx` provides a shared auth guard for all app routes
 - Auth uses `@supabase/ssr` cookie-based sessions throughout
 - Login/register pages are wired to real Supabase Auth (email/password); OAuth callback handler at `/auth/callback`
-- Project creation writes to `projects`, `source_inputs`, `usage_events`, then seeds demo content
-- Demo seed logic is in `src/lib/services/demo-seed.ts`, orchestrated through `src/lib/ai/process.ts`
-- To plug in real AI/video processing, replace the internals of `processProject()` in `src/lib/ai/process.ts`
-- RLS enforces row-level ownership; the app uses the authenticated anon client (not service role) for user-scoped queries
+- Project lifecycle: `draft` → `processing` → `completed` (or `failed`)
+- Content generation is deterministic from source input (no external API calls yet)
+- The generation engine at `src/lib/ai/generate.ts` produces context-aware content based on the user's actual input text, title, and source type
+- To plug in real AI services (Whisper, Gemini, etc.), replace internals of `generateFromInput()` while keeping the same return type
+- RLS enforces row-level ownership; the app uses the authenticated anon client for user-scoped queries
 - Dashboard revalidates after project creation via `revalidatePath`
 
 ## Next Steps
 
-- Apply schema to Supabase project (one-time)
-- Wire real AI pipeline into `src/lib/ai/process.ts` (transcription, highlight extraction, content generation)
+- Wire real AI pipeline into `src/lib/ai/generate.ts` (Whisper transcription, LLM content generation)
 - Enable OAuth providers (Google, GitHub) in Supabase dashboard
 - Add file upload support (Supabase Storage or Vercel Blob)
 - Add billing/usage limits

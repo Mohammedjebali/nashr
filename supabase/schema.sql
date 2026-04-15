@@ -28,7 +28,7 @@ create table if not exists public.projects (
   title          text not null,
   source_type    text not null check (source_type in ('youtube', 'upload', 'text')),
   source_url     text,
-  status         text not null default 'processing' check (status in ('processing', 'completed', 'failed')),
+  status         text not null default 'draft' check (status in ('draft', 'processing', 'completed', 'failed')),
   thumbnail_url  text,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()

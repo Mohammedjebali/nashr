@@ -24,6 +24,15 @@ export default async function ProjectPage({
     notFound();
   }
 
+  const statusVariant =
+    result.project.status === "completed"
+      ? "default"
+      : result.project.status === "failed"
+        ? "destructive"
+        : ("secondary" as const);
+
+  const isReady = result.project.status === "completed";
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
@@ -59,7 +68,7 @@ export default async function ProjectPage({
             </Link>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant="default" className="text-[10px]">
+            <Badge variant={statusVariant} className="text-[10px]">
               {result.project.status}
             </Badge>
             <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -79,30 +88,92 @@ export default async function ProjectPage({
             {result.project.title}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Generated content from your source material
+            {isReady
+              ? "Generated content from your source material"
+              : result.project.status === "processing"
+                ? "Your content is being generated..."
+                : result.project.status === "failed"
+                  ? "Content generation encountered an error"
+                  : "Project created — content generation pending"}
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <TranscriptPanel segments={result.transcript} />
-            <HighlightCards highlights={result.highlights} />
+        {!isReady && (
+          <div className="rounded-lg border border-border/50 p-12 text-center">
+            {result.project.status === "processing" ? (
+              <>
+                <div className="h-8 w-8 mx-auto mb-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <p className="text-sm text-muted-foreground">
+                  Processing your content. This page will show results once
+                  generation completes.
+                </p>
+              </>
+            ) : result.project.status === "failed" ? (
+              <>
+                <svg
+                  className="h-8 w-8 mx-auto mb-4 text-destructive"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+                  />
+                </svg>
+                <p className="text-sm text-muted-foreground">
+                  Something went wrong during generation. Please try creating a
+                  new project.
+                </p>
+              </>
+            ) : (
+              <>
+                <svg
+                  className="h-8 w-8 mx-auto mb-4 text-muted-foreground/40"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                  />
+                </svg>
+                <p className="text-sm text-muted-foreground">
+                  This project is in draft state. Content will appear once
+                  processing begins.
+                </p>
+              </>
+            )}
           </div>
+        )}
 
-          <div className="space-y-6">
-            <LinkedInPost content={result.content.linkedinPost} />
-            <XThread tweets={result.content.xThread} />
-            <HooksHashtags
-              hooks={result.content.hooks}
-              hashtags={result.content.hashtags}
-              captions={result.content.captions}
-            />
-            <BlogDraft
-              outline={result.content.blogOutline}
-              draft={result.content.blogDraft}
-            />
+        {isReady && (
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <TranscriptPanel segments={result.transcript} />
+              <HighlightCards highlights={result.highlights} />
+            </div>
+
+            <div className="space-y-6">
+              <LinkedInPost content={result.content.linkedinPost} />
+              <XThread tweets={result.content.xThread} />
+              <HooksHashtags
+                hooks={result.content.hooks}
+                hashtags={result.content.hashtags}
+                captions={result.content.captions}
+              />
+              <BlogDraft
+                outline={result.content.blogOutline}
+                draft={result.content.blogDraft}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

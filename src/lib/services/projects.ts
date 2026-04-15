@@ -124,7 +124,7 @@ export async function createProject(
         title: input.title,
         source_type: input.sourceType,
         source_url: input.sourceUrl ?? null,
-        status: "processing",
+        status: "draft",
       })
       .select()
       .single();
@@ -149,15 +149,29 @@ export async function createProject(
       metadata: { source_type: input.sourceType },
     });
 
-    await processProject(supabase, projectId, {
-      type: input.sourceType,
-      value: input.sourceUrl ?? input.rawText ?? "",
-    });
-
     await supabase
       .from("projects")
-      .update({ status: "completed" })
+      .update({ status: "processing" })
       .eq("id", projectId);
+
+    try {
+      await processProject(supabase, projectId, {
+        type: input.sourceType,
+        value: input.sourceUrl ?? input.rawText ?? "",
+        title: input.title,
+      });
+
+      await supabase
+        .from("projects")
+        .update({ status: "completed" })
+        .eq("id", projectId);
+    } catch {
+      await supabase
+        .from("projects")
+        .update({ status: "failed" })
+        .eq("id", projectId);
+      throw new Error("Content generation failed");
+    }
 
     return mapDbProject({
       ...(data as Record<string, unknown>),

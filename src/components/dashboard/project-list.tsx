@@ -60,7 +60,13 @@ export function ProjectList({ projects }: { projects: Project[] }) {
               </div>
             </div>
             <Badge
-              variant={project.status === "completed" ? "default" : project.status === "processing" ? "secondary" : "destructive"}
+              variant={
+                project.status === "completed"
+                  ? "default"
+                  : project.status === "failed"
+                    ? "destructive"
+                    : "secondary"
+              }
               className="ml-3 text-[10px] shrink-0"
             >
               {project.status}

@@ -4,7 +4,7 @@ export interface Project {
   title: string;
   sourceType: "youtube" | "upload" | "text";
   sourceUrl?: string | null;
-  status: "processing" | "completed" | "failed";
+  status: "draft" | "processing" | "completed" | "failed";
   createdAt: string;
   updatedAt: string;
   thumbnailUrl?: string | null;
