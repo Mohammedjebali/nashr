@@ -9,26 +9,32 @@ import type {
 export const mockProjects: Project[] = [
   {
     id: "proj-1",
+    user_id: "demo-user",
     title: "How to Build a Personal Brand in the MENA Region",
     sourceType: "youtube",
     sourceUrl: "https://youtube.com/watch?v=example1",
     status: "completed",
     createdAt: "2026-04-14T10:30:00Z",
+    updatedAt: "2026-04-14T10:30:00Z",
   },
   {
     id: "proj-2",
+    user_id: "demo-user",
     title: "Digital Marketing Trends 2026 - Arabic Market",
     sourceType: "youtube",
     sourceUrl: "https://youtube.com/watch?v=example2",
     status: "completed",
     createdAt: "2026-04-13T14:20:00Z",
+    updatedAt: "2026-04-13T14:20:00Z",
   },
   {
     id: "proj-3",
+    user_id: "demo-user",
     title: "Coaching Business Growth Strategies",
     sourceType: "upload",
     status: "processing",
     createdAt: "2026-04-15T08:00:00Z",
+    updatedAt: "2026-04-15T08:00:00Z",
   },
 ];
 

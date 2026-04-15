@@ -1,11 +1,13 @@
 export interface Project {
   id: string;
+  user_id: string;
   title: string;
   sourceType: "youtube" | "upload" | "text";
-  sourceUrl?: string;
+  sourceUrl?: string | null;
   status: "processing" | "completed" | "failed";
   createdAt: string;
-  thumbnailUrl?: string;
+  updatedAt: string;
+  thumbnailUrl?: string | null;
 }
 
 export interface TranscriptSegment {
@@ -43,4 +45,11 @@ export interface ProjectResult {
   transcript: TranscriptSegment[];
   highlights: Highlight[];
   content: GeneratedContent;
+}
+
+export interface CreateProjectInput {
+  title: string;
+  sourceType: "youtube" | "upload" | "text";
+  sourceUrl?: string;
+  rawText?: string;
 }

@@ -7,7 +7,7 @@ import { LinkedInPost } from "@/components/project/linkedin-post";
 import { XThread } from "@/components/project/x-thread";
 import { BlogDraft } from "@/components/project/blog-draft";
 import { HooksHashtags } from "@/components/project/hooks-hashtags";
-import { getMockProjectResult } from "@/lib/mock-data";
+import { getProjectResult } from "@/lib/services/projects";
 
 export default async function ProjectPage({
   params,
@@ -15,7 +15,7 @@ export default async function ProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = getMockProjectResult(id);
+  const result = await getProjectResult(id);
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -1,23 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { createProjectAction } from "@/app/actions";
+
+function extractYouTubeTitle(url: string): string {
+  try {
+    const u = new URL(url);
+    const v = u.searchParams.get("v");
+    return v ? `YouTube Video ${v.slice(0, 8)}` : "YouTube Import";
+  } catch {
+    return "YouTube Import";
+  }
+}
 
 export function InputCard() {
-  const router = useRouter();
-  const [processing, setProcessing] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [progress, setProgress] = useState(0);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [pastedText, setPastedText] = useState("");
 
-  function handleProcess() {
-    setProcessing(true);
+  function handleProcess(sourceType: "youtube" | "upload" | "text") {
     setProgress(0);
 
     const steps = [10, 25, 40, 55, 70, 85, 95, 100];
@@ -28,10 +36,28 @@ export function InputCard() {
         i++;
       } else {
         clearInterval(interval);
-        router.push("/project/proj-1");
       }
     }, 350);
+
+    const title =
+      sourceType === "youtube"
+        ? extractYouTubeTitle(youtubeUrl)
+        : sourceType === "text"
+          ? pastedText.slice(0, 60).trim() || "Text Import"
+          : "File Upload";
+
+    startTransition(async () => {
+      await createProjectAction({
+        title,
+        sourceType,
+        sourceUrl: sourceType === "youtube" ? youtubeUrl : undefined,
+        rawText: sourceType === "text" ? pastedText : undefined,
+      });
+      clearInterval(interval);
+    });
   }
+
+  const processing = isPending || progress > 0;
 
   return (
     <Card className="border-border/50">
@@ -71,7 +97,7 @@ export function InputCard() {
                 onChange={(e) => setYoutubeUrl(e.target.value)}
               />
               <Button
-                onClick={handleProcess}
+                onClick={() => handleProcess("youtube")}
                 disabled={!youtubeUrl.trim()}
                 className="w-full"
               >
@@ -91,7 +117,7 @@ export function InputCard() {
                   MP4, MP3, WAV, TXT, PDF up to 500MB
                 </p>
               </div>
-              <Button onClick={handleProcess} className="w-full">
+              <Button onClick={() => handleProcess("upload")} className="w-full">
                 Upload & Generate
               </Button>
             </TabsContent>
@@ -104,7 +130,7 @@ export function InputCard() {
                 onChange={(e) => setPastedText(e.target.value)}
               />
               <Button
-                onClick={handleProcess}
+                onClick={() => handleProcess("text")}
                 disabled={!pastedText.trim()}
                 className="w-full"
               >

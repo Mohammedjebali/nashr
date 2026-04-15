@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { mockProjects } from "@/lib/mock-data";
+import type { Project } from "@/types";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -16,8 +16,8 @@ const sourceLabels: Record<string, string> = {
   text: "Text",
 };
 
-export function ProjectList() {
-  if (mockProjects.length === 0) {
+export function ProjectList({ projects }: { projects: Project[] }) {
+  if (projects.length === 0) {
     return (
       <Card className="border-border/50">
         <CardContent className="py-12 text-center">
@@ -39,7 +39,7 @@ export function ProjectList() {
         <CardTitle className="text-lg">Recent Projects</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {mockProjects.map((project) => (
+        {projects.map((project) => (
           <Link
             key={project.id}
             href={`/project/${project.id}`}
