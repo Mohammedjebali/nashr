@@ -87,15 +87,25 @@ export default async function ProjectPage({
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-1">
             {result.project.title}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {isReady
-              ? "Generated content from your source material"
-              : result.project.status === "processing"
-                ? "Your content is being generated..."
-                : result.project.status === "failed"
-                  ? "Content generation encountered an error"
-                  : "Project created — content generation pending"}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              {isReady
+                ? "Generated content from your source material"
+                : result.project.status === "processing"
+                  ? "Your content is being generated..."
+                  : result.project.status === "failed"
+                    ? "Content generation encountered an error"
+                    : "Project created — content generation pending"}
+            </p>
+            {isReady && result.generatedBy && (
+              <Badge
+                variant="outline"
+                className="text-[10px] font-normal"
+              >
+                {result.generatedBy === "llm" ? "AI generated" : "Auto generated"}
+              </Badge>
+            )}
+          </div>
         </div>
 
         {!isReady && (

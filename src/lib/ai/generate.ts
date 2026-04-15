@@ -4,19 +4,21 @@ import type {
   GeneratedContent,
   BlogSection,
 } from "@/types";
+import { generateWithLLM } from "./llm";
 
-interface SourceInput {
+export interface SourceInput {
   type: "youtube" | "upload" | "text";
   value: string;
   title: string;
 }
 
-interface GeneratedResult {
+export interface GeneratedResult {
   transcript: TranscriptSegment[];
   highlights: Highlight[];
   content: GeneratedContent;
   language: string;
   durationSeconds: number;
+  generatedBy: "llm" | "deterministic";
 }
 
 function sentenceTokenize(text: string): string[] {
@@ -249,26 +251,43 @@ function buildContent(
   };
 }
 
-function extractYouTubeContext(url: string): string {
+export function parseYouTubeUrl(url: string): {
+  videoId: string;
+  cleanUrl: string;
+} {
   try {
     const u = new URL(url);
-    const videoId = u.searchParams.get("v") ?? u.pathname.split("/").pop() ?? "";
-    return `This content is derived from a YouTube video (${videoId}). The video covers the topic in depth with visual and spoken explanations.`;
+    let videoId = "";
+    if (u.hostname.includes("youtu.be")) {
+      videoId = u.pathname.slice(1).split("/")[0];
+    } else {
+      videoId = u.searchParams.get("v") ?? "";
+    }
+    const cleanUrl = videoId
+      ? `https://www.youtube.com/watch?v=${videoId}`
+      : url;
+    return { videoId, cleanUrl };
   } catch {
-    return "This content is derived from a YouTube video source.";
+    return { videoId: "", cleanUrl: url };
   }
 }
 
-export function generateFromInput(input: SourceInput): GeneratedResult {
-  let rawText: string;
+function detectLanguage(text: string): string {
+  const hasArabic = /[\u0600-\u06FF]/.test(text);
+  const hasFrench = /[àâäéèêëïîôùûüÿçœæ]/i.test(text);
+  return hasArabic ? "ar" : hasFrench ? "fr" : "en";
+}
 
+function buildSourceText(input: SourceInput): string {
   if (input.type === "text" && input.value.trim().length > 0) {
-    rawText = input.value;
-  } else if (input.type === "youtube" && input.value.trim().length > 0) {
-    const ytContext = extractYouTubeContext(input.value);
-    rawText = [
+    return input.value;
+  }
+
+  if (input.type === "youtube" && input.value.trim().length > 0) {
+    const { videoId } = parseYouTubeUrl(input.value);
+    return [
       `${input.title}.`,
-      ytContext,
+      `This content is derived from a YouTube video (${videoId}).`,
       "The creator shares their perspective on this subject, walking through key points and practical advice.",
       "Several frameworks and strategies are discussed that viewers can immediately apply.",
       "The presentation style emphasizes clarity and actionable takeaways for the audience.",
@@ -276,32 +295,72 @@ export function generateFromInput(input: SourceInput): GeneratedResult {
       "Community engagement and audience building are recurring themes throughout.",
       "The content wraps up with a summary of main points and a call to action for viewers.",
     ].join(" ");
-  } else {
-    rawText = [
-      `${input.title}.`,
-      "This content covers the subject matter in detail, exploring multiple dimensions and practical applications.",
-      "Key themes include strategy, execution, and measurable outcomes.",
-      "The material is structured to provide both high-level insights and actionable specifics.",
-      "Examples and frameworks are used to illustrate the core arguments.",
-      "The conclusion ties together the main threads and suggests next steps for the audience.",
-    ].join(" ");
   }
 
+  return [
+    `${input.title}.`,
+    "This content covers the subject matter in detail, exploring multiple dimensions and practical applications.",
+    "Key themes include strategy, execution, and measurable outcomes.",
+    "The material is structured to provide both high-level insights and actionable specifics.",
+    "Examples and frameworks are used to illustrate the core arguments.",
+    "The conclusion ties together the main threads and suggests next steps for the audience.",
+  ].join(" ");
+}
+
+function generateDeterministic(
+  input: SourceInput,
+  rawText: string
+): GeneratedResult {
   const sentences = sentenceTokenize(rawText);
   const keywords = extractKeyPhrases(sentences);
   const { segments, duration } = buildTranscript(sentences);
   const highlights = buildHighlights(segments, keywords);
-  const content = buildContent(input.title, sentences, keywords, highlights, input.type);
-
-  const hasArabic = /[\u0600-\u06FF]/.test(rawText);
-  const hasFrench = /[àâäéèêëïîôùûüÿçœæ]/i.test(rawText);
-  const language = hasArabic ? "ar" : hasFrench ? "fr" : "en";
+  const content = buildContent(
+    input.title,
+    sentences,
+    keywords,
+    highlights,
+    input.type
+  );
 
   return {
     transcript: segments,
     highlights,
     content,
-    language,
+    language: detectLanguage(rawText),
     durationSeconds: duration,
+    generatedBy: "deterministic",
   };
+}
+
+export async function generateFromInput(
+  input: SourceInput
+): Promise<GeneratedResult> {
+  const rawText = buildSourceText(input);
+  const language = detectLanguage(rawText);
+
+  const sentences = sentenceTokenize(rawText);
+  const keywords = extractKeyPhrases(sentences);
+  const { segments, duration } = buildTranscript(sentences);
+  const highlights = buildHighlights(segments, keywords);
+
+  const llmContent = await generateWithLLM({
+    title: input.title,
+    sourceText: rawText,
+    sourceType: input.type,
+    language,
+  });
+
+  if (llmContent) {
+    return {
+      transcript: segments,
+      highlights,
+      content: llmContent,
+      language,
+      durationSeconds: duration,
+      generatedBy: "llm",
+    };
+  }
+
+  return generateDeterministic(input, rawText);
 }

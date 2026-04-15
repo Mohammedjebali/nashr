@@ -8,7 +8,7 @@ export async function processProject(
   projectId: string,
   input: { type: "youtube" | "upload" | "text"; value: string; title: string }
 ) {
-  const result = generateFromInput(input);
+  const result = await generateFromInput(input);
 
   await supabase.from("transcripts").insert({
     project_id: projectId,
@@ -45,4 +45,17 @@ export async function processProject(
       content: a.content,
     }))
   );
+
+  await supabase.from("usage_events").insert({
+    user_id: (
+      await supabase
+        .from("projects")
+        .select("user_id")
+        .eq("id", projectId)
+        .single()
+    ).data?.user_id,
+    project_id: projectId,
+    event_type: "generation_completed",
+    metadata: { generated_by: result.generatedBy, language: result.language },
+  });
 }

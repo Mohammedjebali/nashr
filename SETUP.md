@@ -9,7 +9,8 @@ npm install
 npm run dev
 ```
 
-Without env vars the app runs in **demo mode** with generated mock data.
+Without Supabase env vars the app runs in **demo mode** with mock data.
+Without the Gemini key, content generation uses a deterministic engine (no AI calls).
 
 ## Environment Variables
 
@@ -17,9 +18,12 @@ Without env vars the app runs in **demo mode** with generated mock data.
 NEXT_PUBLIC_SUPABASE_URL=https://nuekoqauvwjqgjqvqygc.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+GOOGLE_GEMINI_API_KEY=<your-gemini-api-key>
 ```
 
-Get keys from: Supabase Dashboard → Project Settings → API (project `nuekoqauvwjqgjqvqygc`).
+**Supabase keys**: Dashboard → Project Settings → API (project `nuekoqauvwjqgjqvqygc`).
+
+**Gemini key** (optional): [Google AI Studio](https://aistudio.google.com/apikey). Enables real AI-generated content (LinkedIn, threads, blogs, hooks, captions). Without it, the deterministic engine produces structured content from the input text.
 
 ## Database Setup
 
@@ -67,15 +71,18 @@ npm run build  # Production build
 - Auth uses `@supabase/ssr` cookie-based sessions throughout
 - Login/register pages are wired to real Supabase Auth (email/password); OAuth callback handler at `/auth/callback`
 - Project lifecycle: `draft` → `processing` → `completed` (or `failed`)
-- Content generation is deterministic from source input (no external API calls yet)
-- The generation engine at `src/lib/ai/generate.ts` produces context-aware content based on the user's actual input text, title, and source type
-- To plug in real AI services (Whisper, Gemini, etc.), replace internals of `generateFromInput()` while keeping the same return type
+- Content generation uses Google Gemini (`gemini-2.0-flash`) when `GOOGLE_GEMINI_API_KEY` is set; falls back to a deterministic engine otherwise
+- The LLM service layer at `src/lib/ai/llm.ts` encapsulates the Gemini call with structured JSON output and safe parsing
+- `generateFromInput()` in `src/lib/ai/generate.ts` is async — it always builds transcript/highlights deterministically, then attempts LLM for written content
+- For pasted text input, the actual user text is sent directly to the LLM (no synthetic padding)
+- Each generation records its method (`llm` or `deterministic`) in a usage event
 - RLS enforces row-level ownership; the app uses the authenticated anon client for user-scoped queries
 - Dashboard revalidates after project creation via `revalidatePath`
 
 ## Next Steps
 
-- Wire real AI pipeline into `src/lib/ai/generate.ts` (Whisper transcription, LLM content generation)
+- Add YouTube transcript extraction (Whisper or third-party API) for richer source material
 - Enable OAuth providers (Google, GitHub) in Supabase dashboard
 - Add file upload support (Supabase Storage or Vercel Blob)
 - Add billing/usage limits
+- Explore additional LLM providers or model upgrades

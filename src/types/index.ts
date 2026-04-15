@@ -45,6 +45,7 @@ export interface ProjectResult {
   transcript: TranscriptSegment[];
   highlights: Highlight[];
   content: GeneratedContent;
+  generatedBy?: "llm" | "deterministic";
 }
 
 export interface CreateProjectInput {

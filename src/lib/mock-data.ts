@@ -5,7 +5,6 @@ import type {
   GeneratedContent,
   ProjectResult,
 } from "@/types";
-import { generateFromInput } from "@/lib/ai/generate";
 
 export const mockProjects: Project[] = [
   {
@@ -246,16 +245,11 @@ export function getMockProjectResult(projectId: string): ProjectResult {
     id: projectId,
   };
 
-  const result = generateFromInput({
-    type: project.sourceType,
-    value: project.sourceUrl ?? "",
-    title: project.title,
-  });
-
   return {
     project,
-    transcript: result.transcript,
-    highlights: result.highlights,
-    content: result.content,
+    transcript: mockTranscript,
+    highlights: mockHighlights,
+    content: mockGeneratedContent,
+    generatedBy: "deterministic",
   };
 }

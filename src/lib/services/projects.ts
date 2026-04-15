@@ -46,7 +46,7 @@ export async function getProjectResult(
     const { createSupabaseServer } = await import("@/lib/supabase/server");
     const supabase = await createSupabaseServer();
 
-    const [projectRes, transcriptRes, highlightsRes, assetsRes] =
+    const [projectRes, transcriptRes, highlightsRes, assetsRes, usageRes] =
       await Promise.all([
         supabase.from("projects").select("*").eq("id", projectId).single(),
         supabase
@@ -63,6 +63,13 @@ export async function getProjectResult(
           .from("generated_assets")
           .select("*")
           .eq("project_id", projectId),
+        supabase
+          .from("usage_events")
+          .select("metadata")
+          .eq("project_id", projectId)
+          .eq("event_type", "generation_completed")
+          .order("created_at", { ascending: false })
+          .limit(1),
       ]);
 
     if (projectRes.error) return null;
@@ -103,7 +110,12 @@ export async function getProjectResult(
       captions: (assetsMap.get("captions")?.items as string[]) ?? [],
     };
 
-    return { project, transcript, highlights, content };
+    const generatedBy =
+      ((usageRes.data?.[0] as Record<string, unknown> | undefined)?.metadata as
+        | Record<string, unknown>
+        | undefined)?.generated_by as "llm" | "deterministic" | undefined;
+
+    return { project, transcript, highlights, content, generatedBy };
   }
 
   return getMockProjectResult(projectId);

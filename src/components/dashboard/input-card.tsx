@@ -12,8 +12,13 @@ import { createProjectAction } from "@/app/actions";
 function extractYouTubeTitle(url: string): string {
   try {
     const u = new URL(url);
-    const v = u.searchParams.get("v");
-    return v ? `YouTube Video ${v.slice(0, 8)}` : "YouTube Import";
+    let videoId = "";
+    if (u.hostname.includes("youtu.be")) {
+      videoId = u.pathname.slice(1).split("/")[0];
+    } else {
+      videoId = u.searchParams.get("v") ?? "";
+    }
+    return videoId ? `YouTube — ${videoId}` : "YouTube Import";
   } catch {
     return "YouTube Import";
   }
