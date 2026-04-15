@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TranscriptPanel } from "@/components/project/transcript-panel";
@@ -17,7 +17,8 @@ export default async function ProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = (await getUser())!;
+  const user = await getUser();
+  if (!user) redirect("/login");
   const result = await getProjectResult(id, user.id);
 
   if (!result) {

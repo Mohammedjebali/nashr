@@ -12,14 +12,27 @@ export async function loginAction(
   _prevState: AuthState,
   formData: FormData
 ): Promise<AuthState> {
+  const email = formData.get("email");
+  const password = formData.get("password");
+
+  if (typeof email !== "string" || !email.trim()) {
+    return { error: "Email is required." };
+  }
+  if (typeof password !== "string" || !password) {
+    return { error: "Password is required." };
+  }
+
   const supabase = await createSupabaseServer();
 
   const { error } = await supabase.auth.signInWithPassword({
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
+    email: email.trim(),
+    password,
   });
 
   if (error) {
+    if (error.message === "Invalid login credentials") {
+      return { error: "Invalid email or password." };
+    }
     return { error: error.message };
   }
 
@@ -30,14 +43,31 @@ export async function registerAction(
   _prevState: AuthState,
   formData: FormData
 ): Promise<AuthState> {
+  const name = formData.get("name");
+  const email = formData.get("email");
+  const password = formData.get("password");
+
+  if (typeof name !== "string" || !name.trim()) {
+    return { error: "Full name is required." };
+  }
+  if (typeof email !== "string" || !email.trim()) {
+    return { error: "Email is required." };
+  }
+  if (typeof password !== "string" || !password) {
+    return { error: "Password is required." };
+  }
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
   const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase.auth.signUp({
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
+    email: email.trim(),
+    password,
     options: {
       data: {
-        full_name: formData.get("name") as string,
+        full_name: name.trim(),
       },
     },
   });

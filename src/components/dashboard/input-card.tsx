@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createProjectAction } from "@/app/actions";
 
 function extractYouTubeTitle(url: string): string {
@@ -27,20 +28,38 @@ function extractYouTubeTitle(url: string): string {
 export function InputCard() {
   const [isPending, startTransition] = useTransition();
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [pastedText, setPastedText] = useState("");
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  function resetState() {
+    setProgress(0);
+    setError(null);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }
 
   function handleProcess(sourceType: "youtube" | "upload" | "text") {
-    setProgress(0);
+    resetState();
 
     const steps = [10, 25, 40, 55, 70, 85, 95, 100];
     let i = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       if (i < steps.length) {
         setProgress(steps[i]);
         i++;
       } else {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     }, 350);
 
@@ -52,17 +71,25 @@ export function InputCard() {
           : "File Upload";
 
     startTransition(async () => {
-      await createProjectAction({
-        title,
-        sourceType,
-        sourceUrl: sourceType === "youtube" ? youtubeUrl : undefined,
-        rawText: sourceType === "text" ? pastedText : undefined,
-      });
-      clearInterval(interval);
+      try {
+        const result = await createProjectAction({
+          title,
+          sourceType,
+          sourceUrl: sourceType === "youtube" ? youtubeUrl : undefined,
+          rawText: sourceType === "text" ? pastedText : undefined,
+        });
+        if (result?.error) {
+          resetState();
+          setError(result.error);
+        }
+      } catch {
+        resetState();
+        setError("Something went wrong. Please try again.");
+      }
     });
   }
 
-  const processing = isPending || progress > 0;
+  const processing = isPending && progress > 0;
 
   return (
     <Card className="border-border/50">
@@ -70,6 +97,11 @@ export function InputCard() {
         <CardTitle className="text-lg">New Project</CardTitle>
       </CardHeader>
       <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         {processing ? (
           <div className="py-8 space-y-4">
             <div className="text-center">
@@ -99,7 +131,7 @@ export function InputCard() {
               <Input
                 placeholder="https://youtube.com/watch?v=..."
                 value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
+                onChange={(e) => { setYoutubeUrl(e.target.value); setError(null); }}
               />
               <Button
                 onClick={() => handleProcess("youtube")}
@@ -132,7 +164,7 @@ export function InputCard() {
                 placeholder="Paste your content here... Articles, transcripts, notes, or any text you want to repurpose."
                 rows={6}
                 value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
+                onChange={(e) => { setPastedText(e.target.value); setError(null); }}
               />
               <Button
                 onClick={() => handleProcess("text")}

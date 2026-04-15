@@ -40,15 +40,18 @@ export async function listProjects(userId: string): Promise<Project[]> {
 
 export async function getProjectResult(
   projectId: string,
-  _userId?: string
+  userId?: string
 ): Promise<ProjectResult | null> {
   if (USE_SUPABASE) {
     const { createSupabaseServer } = await import("@/lib/supabase/server");
     const supabase = await createSupabaseServer();
 
+    let projectQuery = supabase.from("projects").select("*").eq("id", projectId);
+    if (userId) projectQuery = projectQuery.eq("user_id", userId);
+
     const [projectRes, transcriptRes, highlightsRes, assetsRes, usageRes] =
       await Promise.all([
-        supabase.from("projects").select("*").eq("id", projectId).single(),
+        projectQuery.single(),
         supabase
           .from("transcripts")
           .select("*")

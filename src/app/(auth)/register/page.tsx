@@ -43,7 +43,7 @@ export default function RegisterPage() {
           <form action={formAction}>
             <CardHeader className="pb-4">
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" type="button" className="h-10">
+                <Button variant="outline" type="button" className="h-10 opacity-50 cursor-not-allowed" disabled title="Coming soon">
                   <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
@@ -64,7 +64,7 @@ export default function RegisterPage() {
                   </svg>
                   Google
                 </Button>
-                <Button variant="outline" type="button" className="h-10">
+                <Button variant="outline" type="button" className="h-10 opacity-50 cursor-not-allowed" disabled title="Coming soon">
                   <svg
                     className="h-4 w-4 mr-2"
                     fill="currentColor"
@@ -75,6 +75,7 @@ export default function RegisterPage() {
                   GitHub
                 </Button>
               </div>
+              <p className="text-[10px] text-muted-foreground/60 text-center mt-1">Social login coming soon</p>
             </CardHeader>
 
             <div className="px-6">
