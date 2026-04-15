@@ -10,6 +10,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 ```
 
+Without env vars the app runs in demo mode with mock data.
+
 ## Database Schema
 
 Apply the schema to the Supabase project:
@@ -39,8 +41,20 @@ npm run build  # Production build
 
 ## Architecture Notes
 
-- `proxy.ts` handles route protection (Next.js 16 proxy pattern)
+- `proxy.ts` handles route protection (Next.js 16 proxy pattern — replaces traditional middleware.ts)
+- `src/app/(app)/layout.tsx` provides a shared auth guard for all app routes (dashboard, project detail)
 - Auth uses `@supabase/ssr` cookie-based sessions throughout
-- Project creation seeds demo content (transcript, highlights, generated assets) so the product feels alive
-- Demo seed logic is in `src/lib/services/demo-seed.ts` — replace with real AI/video processing later
+- Login/register pages are wired to real Supabase Auth (email/password); OAuth callback handler at `/auth/callback`
+- Project creation writes to `projects`, `source_inputs`, `usage_events`, then seeds demo content
+- Demo seed logic is in `src/lib/services/demo-seed.ts`, orchestrated through `src/lib/ai/process.ts`
+- To plug in real AI/video processing, replace the internals of `processProject()` in `src/lib/ai/process.ts`
 - RLS enforces row-level ownership; the app uses the authenticated anon client (not service role) for user-scoped queries
+- Dashboard revalidates after project creation via `revalidatePath`
+
+## Next Steps
+
+- Apply schema to Supabase project (one-time)
+- Wire real AI pipeline into `src/lib/ai/process.ts` (transcription, highlight extraction, content generation)
+- Enable OAuth providers (Google, GitHub) in Supabase dashboard
+- Add file upload support (Supabase Storage or Vercel Blob)
+- Add billing/usage limits

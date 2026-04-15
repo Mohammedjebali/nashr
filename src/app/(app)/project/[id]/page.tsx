@@ -9,6 +9,7 @@ import { XThread } from "@/components/project/x-thread";
 import { BlogDraft } from "@/components/project/blog-draft";
 import { HooksHashtags } from "@/components/project/hooks-hashtags";
 import { getProjectResult } from "@/lib/services/projects";
+import { getUser } from "@/lib/supabase/server";
 
 export default async function ProjectPage({
   params,
@@ -16,7 +17,8 @@ export default async function ProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getProjectResult(id);
+  const user = (await getUser())!;
+  const result = await getProjectResult(id, user.id);
 
   if (!result) {
     notFound();

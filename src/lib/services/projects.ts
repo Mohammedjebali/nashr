@@ -1,6 +1,6 @@
 import type { Project, ProjectResult, CreateProjectInput } from "@/types";
 import { getMockProjectResult, mockProjects } from "@/lib/mock-data";
-import { seedDemoContent } from "@/lib/services/demo-seed";
+import { processProject } from "@/lib/ai/process";
 
 const USE_SUPABASE =
   typeof process !== "undefined" &&
@@ -39,7 +39,8 @@ export async function listProjects(userId: string): Promise<Project[]> {
 }
 
 export async function getProjectResult(
-  projectId: string
+  projectId: string,
+  _userId?: string
 ): Promise<ProjectResult | null> {
   if (USE_SUPABASE) {
     const { createSupabaseServer } = await import("@/lib/supabase/server");
@@ -148,7 +149,10 @@ export async function createProject(
       metadata: { source_type: input.sourceType },
     });
 
-    await seedDemoContent(supabase, projectId);
+    await processProject(supabase, projectId, {
+      type: input.sourceType,
+      value: input.sourceUrl ?? input.rawText ?? "",
+    });
 
     await supabase
       .from("projects")

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getUser } from "@/lib/supabase/server";
 import { logoutAction } from "@/app/actions/auth";
 
-export default async function AppLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
