@@ -205,3 +205,183 @@ export async function createProject(
     thumbnailUrl: null,
   };
 }
+
+export async function deleteProject(
+  projectId: string,
+  userId: string
+): Promise<void> {
+  if (!USE_SUPABASE) return;
+
+  const { createSupabaseServer } = await import("@/lib/supabase/server");
+  const supabase = await createSupabaseServer();
+
+  await supabase.from("usage_events").delete().eq("project_id", projectId);
+  await supabase.from("generated_assets").delete().eq("project_id", projectId);
+  await supabase.from("highlights").delete().eq("project_id", projectId);
+  await supabase.from("transcripts").delete().eq("project_id", projectId);
+  await supabase.from("source_inputs").delete().eq("project_id", projectId);
+
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", projectId)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+}
+
+export async function duplicateProject(
+  projectId: string,
+  userId: string
+): Promise<Project> {
+  if (!USE_SUPABASE) throw new Error("Supabase not configured");
+
+  const { createSupabaseServer } = await import("@/lib/supabase/server");
+  const supabase = await createSupabaseServer();
+
+  const { data: original } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .single();
+
+  if (!original) throw new Error("Project not found");
+
+  const { data: newProject, error } = await supabase
+    .from("projects")
+    .insert({
+      user_id: userId,
+      title: `${(original as Record<string, unknown>).title} (copy)`,
+      source_type: (original as Record<string, unknown>).source_type,
+      source_url: (original as Record<string, unknown>).source_url,
+      status: (original as Record<string, unknown>).status,
+      thumbnail_url: (original as Record<string, unknown>).thumbnail_url,
+    })
+    .select()
+    .single();
+
+  if (error || !newProject) throw error ?? new Error("Insert failed");
+  const newId = (newProject as Record<string, unknown>).id as string;
+
+  const { data: sources } = await supabase
+    .from("source_inputs")
+    .select("*")
+    .eq("project_id", projectId);
+
+  if (sources?.length) {
+    await supabase.from("source_inputs").insert(
+      (sources as Record<string, unknown>[]).map((s) => ({
+        project_id: newId,
+        input_type: s.input_type,
+        raw_url: s.raw_url,
+        raw_text: s.raw_text,
+        file_path: s.file_path,
+        metadata: s.metadata,
+      }))
+    );
+  }
+
+  const { data: transcript } = await supabase
+    .from("transcripts")
+    .select("*")
+    .eq("project_id", projectId)
+    .single();
+
+  if (transcript) {
+    const t = transcript as Record<string, unknown>;
+    await supabase.from("transcripts").insert({
+      project_id: newId,
+      segments: t.segments,
+      language: t.language,
+      duration_seconds: t.duration_seconds,
+    });
+  }
+
+  const { data: highlights } = await supabase
+    .from("highlights")
+    .select("*")
+    .eq("project_id", projectId);
+
+  if (highlights?.length) {
+    await supabase.from("highlights").insert(
+      (highlights as Record<string, unknown>[]).map((h) => ({
+        project_id: newId,
+        title: h.title,
+        start_time: h.start_time,
+        end_time: h.end_time,
+        summary: h.summary,
+        tags: h.tags,
+      }))
+    );
+  }
+
+  const { data: assets } = await supabase
+    .from("generated_assets")
+    .select("*")
+    .eq("project_id", projectId);
+
+  if (assets?.length) {
+    await supabase.from("generated_assets").insert(
+      (assets as Record<string, unknown>[]).map((a) => ({
+        project_id: newId,
+        asset_type: a.asset_type,
+        content: a.content,
+        version: a.version,
+      }))
+    );
+  }
+
+  return mapDbProject(newProject as Record<string, unknown>);
+}
+
+export async function regenerateProject(
+  projectId: string,
+  userId: string
+): Promise<void> {
+  if (!USE_SUPABASE) return;
+
+  const { createSupabaseServer } = await import("@/lib/supabase/server");
+  const supabase = await createSupabaseServer();
+
+  const [{ data: project }, { data: source }] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
+      .eq("user_id", userId)
+      .single(),
+    supabase
+      .from("source_inputs")
+      .select("*")
+      .eq("project_id", projectId)
+      .single(),
+  ]);
+
+  if (!project) throw new Error("Project not found");
+
+  const p = project as Record<string, unknown>;
+  const s = source as Record<string, unknown> | null;
+
+  await supabase
+    .from("projects")
+    .update({ status: "processing" })
+    .eq("id", projectId);
+
+  let finalStatus: "completed" | "failed" = "completed";
+
+  try {
+    await processProject(supabase, projectId, userId, {
+      type: p.source_type as "youtube" | "upload" | "text",
+      value: (s?.raw_url as string) ?? (s?.raw_text as string) ?? (p.title as string),
+      title: p.title as string,
+    });
+  } catch {
+    finalStatus = "failed";
+  }
+
+  await supabase
+    .from("projects")
+    .update({ status: finalStatus })
+    .eq("id", projectId);
+}

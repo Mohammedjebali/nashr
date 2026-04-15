@@ -2,7 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createProject } from "@/lib/services/projects";
+import {
+  createProject,
+  deleteProject,
+  duplicateProject,
+  regenerateProject,
+} from "@/lib/services/projects";
 import { getUser } from "@/lib/supabase/server";
 import type { CreateProjectInput } from "@/types";
 
@@ -35,6 +40,57 @@ export async function createProjectAction(
     if (typeof err === "object" && err !== null && "digest" in err) {
       throw err;
     }
-    return { error: "Something went wrong creating your project. Please try again." };
+    return {
+      error: "Something went wrong creating your project. Please try again.",
+    };
+  }
+}
+
+export async function deleteProjectAction(
+  projectId: string
+): Promise<ProjectActionResult> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
+  try {
+    await deleteProject(projectId, user.id);
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
+  } catch (err) {
+    if (typeof err === "object" && err !== null && "digest" in err) throw err;
+    return { error: "Failed to delete project." };
+  }
+}
+
+export async function duplicateProjectAction(
+  projectId: string
+): Promise<ProjectActionResult> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
+  try {
+    const newProject = await duplicateProject(projectId, user.id);
+    revalidatePath("/dashboard");
+    redirect(`/project/${newProject.id}`);
+  } catch (err) {
+    if (typeof err === "object" && err !== null && "digest" in err) throw err;
+    return { error: "Failed to duplicate project." };
+  }
+}
+
+export async function regenerateProjectAction(
+  projectId: string
+): Promise<ProjectActionResult> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
+  try {
+    await regenerateProject(projectId, user.id);
+    revalidatePath(`/project/${projectId}`);
+    revalidatePath("/dashboard");
+    redirect(`/project/${projectId}`);
+  } catch (err) {
+    if (typeof err === "object" && err !== null && "digest" in err) throw err;
+    return { error: "Failed to regenerate content." };
   }
 }

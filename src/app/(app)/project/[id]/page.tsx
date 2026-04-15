@@ -2,12 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TranscriptPanel } from "@/components/project/transcript-panel";
-import { HighlightCards } from "@/components/project/highlight-cards";
-import { LinkedInPost } from "@/components/project/linkedin-post";
-import { XThread } from "@/components/project/x-thread";
-import { BlogDraft } from "@/components/project/blog-draft";
-import { HooksHashtags } from "@/components/project/hooks-hashtags";
+import { ContentWorkspace } from "@/components/project/content-workspace";
+import { ProjectActions } from "@/components/project/project-actions";
 import { getProjectResult } from "@/lib/services/projects";
 import { getUser } from "@/lib/supabase/server";
 
@@ -79,6 +75,7 @@ export default async function ProjectPage({
                   ? "Upload"
                   : "Text"}
             </span>
+            {isReady && <ProjectActions projectId={id} />}
           </div>
         </div>
       </header>
@@ -163,28 +160,7 @@ export default async function ProjectPage({
           </div>
         )}
 
-        {isReady && (
-          <div className="grid lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <TranscriptPanel segments={result.transcript} />
-              <HighlightCards highlights={result.highlights} />
-            </div>
-
-            <div className="space-y-6">
-              <LinkedInPost content={result.content.linkedinPost} />
-              <XThread tweets={result.content.xThread} />
-              <HooksHashtags
-                hooks={result.content.hooks}
-                hashtags={result.content.hashtags}
-                captions={result.content.captions}
-              />
-              <BlogDraft
-                outline={result.content.blogOutline}
-                draft={result.content.blogDraft}
-              />
-            </div>
-          </div>
-        )}
+        {isReady && <ContentWorkspace result={result} />}
       </main>
     </div>
   );
